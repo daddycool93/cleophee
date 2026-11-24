@@ -545,6 +545,7 @@ details[open] p{animation:rise .55s var(--ease)}
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbzgs8OjYltFuYKcx2h5-8oAFMYGwZWBeA-uqinxOYTMtZNFL5gd7ayHVE0hp-V99-Ey/exec';
 const QS = new URLSearchParams(location.search);
+const SEED = {"ok": true, "cfg": {"PRENOM": "Cléophée", "AGE_TXT": "1 an", "DATE": "2026-12-12", "dateLong": "samedi 12 décembre 2026", "heure": "14h", "heureFin": "18h", "rsvpLong": "samedi 28 novembre 2026", "ADRESSE": "5 allée des Zinnias", "CP_VILLE": "92600 Asnières-sur-Seine", "adresseFull": "5 allée des Zinnias, 92600 Asnières-sur-Seine", "CONTACT_NOM": "La maman de Cléophée", "CONTACT_TEL": "+33650889292", "telFmt": "+33 6 50 88 92 92", "SIGNATURE_MAIL": "nananexplorationci@gmail.com", "SIGNATURE_TEL": "+33615492822", "sigTel": "+33 6 15 49 28 22", "IMAGE_URL": "", "MUSIQUE_URL": "", "VOLUME": "0.4", "start": 1797080400000, "end": 1797094800000, "maps": "https://www.google.com/maps/dir/?api=1&destination=5%20all%C3%A9e%20des%20Zinnias%2C%2092600%20Asni%C3%A8res-sur-Seine", "gcal": "https://calendar.google.com/calendar/render?action=TEMPLATE&text=Anniversaire%20de%20Cl%C3%A9oph%C3%A9e%20%281%20an%29&dates=20261212T140000/20261212T180000&ctz=Europe/Paris&location=5%20all%C3%A9e%20des%20Zinnias%2C%2092600%20Asni%C3%A8res-sur-Seine&details=Premier%20anniversaire%20de%20Cl%C3%A9oph%C3%A9e.%0AInfos%20et%20r%C3%A9ponse%20%3A%20https%3A%2F%2Fdaddycool93.github.io%2Fcleophee%2F%0AContact%20%3A%20%2B33650889292", "transports": ["Métro ligne 13 : stations Gabriel Péri ou Les Agnettes", "Train : gare d'Asnières-sur-Seine, à quelques minutes de Paris Saint-Lazare", "Bus : vérifiez la ligne la plus proche sur l'appli RATP ou Citymapper", "Voiture : stationnement dans les rues alentour, prévoyez quelques minutes d'avance"], "url": "https://daddycool93.github.io/cleophee/"}, "messages": [], "stats": {"familles": 0, "personnes": 0}, "prefill": null};
 function run(D) {
 const C = D.cfg;
 document.getElementById('hint').innerHTML = 'Touche la bulle pour ouvrir l\'invitation<br>et monte le son, une petite mélodie t\'attend';
@@ -871,18 +872,25 @@ prefill(D.prefill || store.get(KEY));
 if (D.prefill) { reveal(true); setTimeout(() => $('#rsvp').scrollIntoView({ behavior: 'smooth' }), 400); }
 ui();
 if (!M.muted) M.start();
+window.refresh = d2 => {
+  Object.assign(C, d2.cfg);
+  $$('[data-c]').forEach(e => { const v = C[e.dataset.c] || ''; e.textContent = e.hasAttribute('data-up') ? cap(v) : v; });
+  $('#gcal').href = C.gcal; $('#gmaps').href = C.maps;
+  $('#deadline').textContent = C.rsvpLong ? 'Merci de répondre avant le ' + C.rsvpLong + '.' : '';
+  $('#ringTxt').textContent = `✦ ${cap(C.dateLong)} ✦ dès ${C.heure} ✦ ${C.PRENOM} fête ses 1 an `;
+  renderStats(d2.stats); renderMsgs(d2.messages);
+  if (d2.prefill) { prefill(d2.prefill); reveal(true); setTimeout(() => $('#rsvp').scrollIntoView({ behavior: 'smooth' }), 400); }
+};
 }
 
 /* ---- Chargement des données ---- */
+run(Object.assign({}, SEED, { invite: (QS.get('n') || '').slice(0, 40) }));
 (function boot(tries) {
-  const id = QS.get('id'), n = (QS.get('n') || '').slice(0, 40);
+  const id = QS.get('id');
   fetch(API + '?api=init' + (id ? '&id=' + encodeURIComponent(id) : ''))
     .then(r => r.json())
-    .then(d => { if (!d.ok) throw new Error(d.error); d.invite = n; run(d); })
-    .catch(() => {
-      if (tries < 2) return setTimeout(() => boot(tries + 1), 1500);
-      document.getElementById('hint').innerHTML = "L'invitation n'a pas pu se charger.<br><a href=\"" + location.href + "\" target=\"_self\">Recharger la page</a>";
-    });
+    .then(d => { if (!d.ok) throw new Error(d.error); window.refresh(d); })
+    .catch(() => { if (tries < 3) setTimeout(() => boot(tries + 1), 2000); });
 })(0);
 </script>
 </body>
